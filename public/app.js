@@ -5,6 +5,17 @@ const card = document.getElementById("card");
 const nextBtn = document.getElementById("next");
 const openBtn = document.getElementById("openSite");
 
+if (openBtn) {
+  openBtn.onclick = () => {
+    const lead = leads[current];
+    if (lead.website && lead.website !== "bez webu") {
+      let url = lead.website;
+      if (!url.startsWith("http")) url = "https://" + url;
+      window.open(url, "_blank");
+    }
+  };
+}
+
 async function loadLeads() {
   try {
     const res = await fetch("/api/leads");
