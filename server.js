@@ -15,8 +15,14 @@ async function scanLeads() {
 [out:json];
 area["name"="Bratislava"]->.a;
 (
-  node["shop"="car_repair"](area.a);
-  way["shop"="car_repair"](area.a);
+  node["shop"](area.a);
+  node["tourism"](area.a);
+  node["craft"](area.a);
+  node["office"](area.a);
+  way["shop"](area.a);
+  way["tourism"](area.a);
+  way["craft"](area.a);
+  way["office"](area.a);
 );
 out tags;
 `;
