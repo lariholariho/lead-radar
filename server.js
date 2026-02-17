@@ -9,18 +9,16 @@ let leads = [];
 
 // ---------- AUTO SCAN ----------
 async function scanLeads() {
-  console.log("Scanning...");
+  console.log("Scanning REAL leads...");
 
   const query = `
 [out:json];
 area["name"="Bratislava"]->.a;
 (
   node["shop"](area.a);
-  node["tourism"](area.a);
   node["craft"](area.a);
   node["office"](area.a);
   way["shop"](area.a);
-  way["tourism"](area.a);
   way["craft"](area.a);
   way["office"](area.a);
 );
@@ -35,17 +33,28 @@ out tags;
     );
 
     leads = res.data.elements
-      .filter(x => x.tags?.name)
+
+      // musí mať názov + web
+      .filter(x => x.tags?.name && x.tags?.website)
+
+      // vyhodíme nezmysly
+      .filter(x =>
+        !x.tags.name.toLowerCase().includes("cemetery") &&
+        !x.tags.name.toLowerCase().includes("street") &&
+        !x.tags.name.toLowerCase().includes("park")
+      )
+
       .map(x => ({
         name: x.tags.name,
-        website: x.tags.website || "bez webu",
-        issue: "Možný starší web — skontrolovať",
-        score: x.tags.website ? "🔥 HIGH" : "⭐ MEDIUM"
+        website: x.tags.website,
+        issue: "Web má potenciál na redesign",
+        score: "🔥 HIGH"
       }));
 
-    console.log("Leads:", leads.length);
+    console.log("REAL leads:", leads.length);
+
   } catch (e) {
-    console.log("Scan error");
+    console.log("Scan error", e.message);
   }
 }
 
