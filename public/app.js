@@ -8,15 +8,11 @@ const openBtn = document.getElementById("openSite");
 const importBtn = document.getElementById("importLead");
 const leadUrlInput = document.getElementById("leadUrl");
 
-// ---------- LOAD EXISTING LEADS ----------
+// ---------- LOAD ----------
 async function loadLeads() {
   try {
     const res = await fetch("/api/leads");
     leads = await res.json();
-
-    // local manual leads
-    const saved = JSON.parse(localStorage.getItem("manualLeads") || "[]");
-    leads = [...saved, ...leads];
 
     if (!leads.length) {
       card.innerHTML = "<p>Žiadne leady zatiaľ 😕</p>";
@@ -24,7 +20,7 @@ async function loadLeads() {
     }
 
     renderLead();
-  } catch (e) {
+  } catch {
     card.innerHTML = "<p>Chyba načítania leadov</p>";
   }
 }
@@ -38,7 +34,8 @@ function renderLead() {
     <h2>${lead.name}</h2>
     <p>🌐 ${lead.website}</p>
     <p>⚠️ ${lead.issue}</p>
-    <strong>${lead.score}</strong>
+    <p><strong>${lead.score}</strong></p>
+    ${lead.email ? `<p>✉️ ${lead.email}</p>` : ""}
   `;
 }
 
@@ -62,63 +59,28 @@ if (openBtn) {
   };
 }
 
-// ---------- SNIPER IMPORT ----------
-importBtn.onclick = () => {
+// ---------- SNIPER IMPORT REAL ----------
+importBtn.onclick = async () => {
   const url = leadUrlInput.value.trim();
   if (!url) return;
 
-  const domain = url
-    .replace("https://", "")
-    .replace("http://", "")
-    .split("/")[0];
-
-  const newLead = {
-    name: domain,
-    website: url,
-    issue: "Manual sniper lead — skontroluj web",
-    score: "🔥 SNIPER"
-  };
-
-  // save locally
-  const saved = JSON.parse(localStorage.getItem("manualLeads") || "[]");
-  saved.unshift(newLead);
-  localStorage.setItem("manualLeads", JSON.stringify(saved));
-
-  leads.unshift(newLead);
-  current = 0;
-  renderLead();
-
-  leadUrlInput.value = "";
-};
-
-app.get("/api/import", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.json({ error: "missing url" });
-
   try {
-    const html = await axios.get(url);
-    const $ = cheerio.load(html.data);
+    const res = await fetch(`/api/import?url=${encodeURIComponent(url)}`);
+    const newLead = await res.json();
 
-    const title = $("title").text() || url;
+    if (newLead.error) {
+      alert("Nepodarilo sa načítať stránku");
+      return;
+    }
 
-    // simple email detect
-    const bodyText = $("body").text();
-    const emailMatch = bodyText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    leads.unshift(newLead);
+    current = 0;
+    renderLead();
 
-    const lead = {
-      name: title.substring(0, 60),
-      website: url,
-      issue: "Imported sniper lead",
-      score: "🔥 SNIPER",
-      email: emailMatch ? emailMatch[0] : "nenájdený"
-    };
-
-    leads.unshift(lead);
-
-    res.json(lead);
-  } catch (e) {
-    res.json({ error: "cannot load site" });
+    leadUrlInput.value = "";
+  } catch {
+    alert("Import error");
   }
-});
+};
 
 loadLeads();
