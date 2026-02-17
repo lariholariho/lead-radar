@@ -35,7 +35,26 @@ out tags;
     leads = res.data.elements
 
       // musí mať názov + web
-    .filter(x => x.tags?.name && x.tags?.website)
+   .filter(x => x.tags?.name && x.tags?.website)
+
+// vyhoď veľké reťazce
+.filter(x => {
+  const n = x.tags.name.toLowerCase();
+
+  return ![
+    "tesco",
+    "billa",
+    "lidl",
+    "kaufland",
+    "shell",
+    "omv",
+    "slovnaft",
+    "mcdonald",
+    "kfc",
+    "burger king",
+    "ikea"
+  ].some(big => n.includes(big));
+})
 
 // vyhoď veľké reťazce
 .filter(x => {
