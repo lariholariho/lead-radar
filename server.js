@@ -1,8 +1,7 @@
-
-import cheerio from "cheerio";
 import express from "express";
 import axios from "axios";
 import cron from "node-cron";
+import cheerio from "cheerio";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,55 +34,7 @@ out tags;
     );
 
     leads = res.data.elements
-
-      // musí mať názov + web
-   .filter(x => x.tags?.name && x.tags?.website)
-
-// vyhoď veľké reťazce
-.filter(x => {
-  const n = x.tags.name.toLowerCase();
-
-  return ![
-    "tesco",
-    "billa",
-    "lidl",
-    "kaufland",
-    "shell",
-    "omv",
-    "slovnaft",
-    "mcdonald",
-    "kfc",
-    "burger king",
-    "ikea"
-  ].some(big => n.includes(big));
-})
-
-// vyhoď veľké reťazce
-.filter(x => {
-  const n = x.tags.name.toLowerCase();
-
-  return ![
-    "tesco",
-    "billa",
-    "lidl",
-    "kaufland",
-    "shell",
-    "omv",
-    "slovnaft",
-    "mcdonald",
-    "kfc",
-    "burger king",
-    "ikea"
-  ].some(big => n.includes(big));
-})
-
-      // vyhodíme nezmysly
-      .filter(x =>
-        !x.tags.name.toLowerCase().includes("cemetery") &&
-        !x.tags.name.toLowerCase().includes("street") &&
-        !x.tags.name.toLowerCase().includes("park")
-      )
-
+      .filter(x => x.tags?.name && x.tags?.website)
       .map(x => ({
         name: x.tags.name,
         website: x.tags.website,
@@ -91,22 +42,51 @@ out tags;
         score: "🔥 HIGH"
       }));
 
-    console.log("REAL leads:", leads.length);
+    console.log("Leads:", leads.length);
 
   } catch (e) {
     console.log("Scan error", e.message);
   }
 }
 
-// run on start
 scanLeads();
-
-// every day at 08:00
 cron.schedule("0 8 * * *", scanLeads);
 
-// ---------- API ----------
+// ---------- API LEADS ----------
 app.get("/api/leads", (req, res) => {
   res.json(leads);
+});
+
+// ---------- SNIPER IMPORT ----------
+app.get("/api/import", async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.json({ error: "missing url" });
+
+  try {
+    const html = await axios.get(url);
+    const $ = cheerio.load(html.data);
+
+    const title = $("title").text() || url;
+
+    const body = $("body").text();
+    const emailMatch =
+      body.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+
+    const lead = {
+      name: title.substring(0, 60),
+      website: url,
+      issue: "Imported sniper lead",
+      score: "🔥 SNIPER",
+      email: emailMatch ? emailMatch[0] : "nenájdený"
+    };
+
+    leads.unshift(lead);
+
+    res.json(lead);
+
+  } catch (e) {
+    res.json({ error: "cannot load site" });
+  }
 });
 
 // ---------- FRONTEND ----------
@@ -115,4 +95,3 @@ app.use(express.static("public"));
 app.listen(PORT, () =>
   console.log("Running on port", PORT)
 );
-
