@@ -27,3 +27,21 @@ button {
   background:orange;
   font-weight:bold;
 }
+
+.sniper-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sniper-box input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+}
+
+.sniper-box button {
+  background: #22c55e;
+  color: white;
+}
